@@ -1,0 +1,13 @@
+let unauthorizedAttempts = AzureDiagnostics
+| where Category == "AzureActiveDirectory" and Level == "Error" and OperationName == "SignInAttempts"
+| where parse_json(AdditionalDetails).{"LoginErrorCode"} != 0;
+AzureActivity
+| where OperationName contains "Microsoft.Authorization/roleAssignments/write"
+| where ResultValue == "Failure" and ExtendedStatus contains "Unauthorized"
+| where ResourceProvider == "Microsoft.Authorization" and Resource contains "/providers/Microsoft.Authorization/roleAssignments"
+| join kind=leftouter (
+unauthorizedAttempts
+| extend OperationName = "SignInAttempts"
+| project TimeGenerated, ActivityId, OperationName, CorrelationId, UserId, ClientAppId, AppDisplayName, AppId, IPAddress, LocationDetails
+) on CorrelationId
+| project ActivityTime = TimeGenerated, OperationName, PrincipalId, ResourceType, Resource, ResultDescription, UserId, ClientAppId, AppDisplayName, AppId, IPAddress, LocationDetails
