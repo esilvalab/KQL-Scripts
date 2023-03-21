@@ -1,0 +1,10 @@
+// Query for File Transfers by Browsers
+DeviceFileEvents
+| where ActionType == "FileCreated"
+| where InitiatingProcessFileName in~ ("chrome.exe", "firefox.exe", "iexplore.exe", "MicrosoftEdge.exe") // Change this to the names of the browsers you want to monitor
+| where FolderPath startswith "C:\\Users\\" // Change this to the folder path where your users' browser download folder is located
+| where FileName !startswith "." // Exclude hidden files/folders
+| where FileName endswith~ (".pdf", ".docx", ".xlsx", ".zip", ".exe") // Change this to the file extensions you want to monitor for transfer
+| extend FileSizeKB = round(FileSize/1024, 2)
+| extend FilePath = strcat(FolderPath, FileName)
+| project TimeGenerated, DeviceName, InitiatingProcessCommandLine, FilePath, FileSizeKB
