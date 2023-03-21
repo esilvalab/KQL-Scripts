@@ -1,0 +1,16 @@
+// Set the time range for the query
+let start_time = ago(7d);
+let end_time = now();
+
+// Filter for vulnerability events
+let vulnerability_events = 
+    SecurityEvent
+    | where TimeGenerated >= start_time and TimeGenerated <= end_time
+    | where EventID == 4657 // A registry value was modified
+    and RegistryValue contains "CVE";
+
+// Extract the CVE identifier from the registry value
+vulnerability_events
+| extend cve_id = extract("CVE-\\d{4}-\\d+", 0, RegistryValue)
+| summarize count() by cve_id
+| order by count_ desc
