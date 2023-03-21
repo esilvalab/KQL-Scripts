@@ -1,0 +1,26 @@
+ProcessCreateEvents
+| where ProcessCommandLine contains "powershell" and ProcessCommandLine contains "-Command"
+| extend Command = extract("powershell.exe -Command \"(?<command>.*)\"", 1, ProcessCommandLine)
+| project TimeGenerated, Computer, AccountName, Command
+
+Identify PowerShell commands executed from script files:
+ProcessCreateEvents
+| where ProcessCommandLine contains "powershell" and ProcessCommandLine contains "-File"
+| extend ScriptPath = extract("powershell.exe -File \"(?<script_path>.*)\"", 1, ProcessCommandLine)
+| join kind=leftouter (
+  FileChanges
+  | where FileName endswith ".ps1" or FileName endswith ".psm1"
+  | summarize LastWriteTime = max(TimeGenerated) by FileName
+) on $left.ScriptPath == $right.FileName
+| project TimeGenerated, Computer, AccountName, ScriptPath, LastWriteTime
+
+Identify PowerShell commands executed using PowerShell remoting:
+SecurityEvent
+| where EventID == 4624 and LogonType == 3 and TargetUserName != "ANONYMOUS LOGON" and TargetUserName != "$"
+| join kind=leftouter (
+  PowerShellEvents
+  | where EventID == 4104
+  | extend Command = extract("\"(?<command>.*)\"", 1, RenderedDescription)
+  | project TimeGenerated, Computer, AccountName, Command
+) on $left.AccountName == $right.AccountName
+| project TimeGenerated, Computer, AccountName, Command
