@@ -1,0 +1,22 @@
+// Set the time range for the query
+let start_time = ago(1d);
+let end_time = now();
+
+// Filter for events related to security and vulnerabilities
+let security_events = 
+    SecurityEvent
+    | where TimeGenerated >= start_time and TimeGenerated <= end_time
+    | where EventID == 4624 // logon event
+    or EventID == 4625 // failed logon event
+    or EventID == 4634 // logoff event
+    or EventID == 4648 // A logon was attempted using explicit credentials
+    or EventID == 4698 // Scheduled Task created
+    or EventID == 4699 // Scheduled Task deleted
+    or EventID == 7034 // Service stopped
+    or EventID == 7045 // Service installed or removed
+    or EventID == 8004 // DNS query refused
+
+// Group the events by device and vulnerability
+security_events
+| summarize count() by DeviceName, VulnerabilityID
+| where count_ > 5
