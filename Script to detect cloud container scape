@@ -1,0 +1,15 @@
+// Set the time range for the query
+let start_time = ago(1d);
+let end_time = now();
+
+// Filter for events related to container orchestration
+let container_events = 
+    AzureActivity
+    | where TimeGenerated >= start_time and TimeGenerated <= end_time
+    | where OperationName == "Microsoft.ContainerService/managedClusters/*"
+    or OperationName == "Microsoft.ContainerRegistry/*";
+
+// Group the events by subscription and resource group
+container_events
+| summarize count() by SubscriptionId, ResourceGroupName
+| where count_ > 10
