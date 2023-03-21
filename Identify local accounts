@@ -1,0 +1,4 @@
+SecurityEvent
+| where EventID == 4720 or EventID == 4722 or EventID == 4723 or EventID == 4724 or EventID == 4725 or EventID == 4726 or EventID == 4738 or EventID == 4739 or EventID == 4740 or EventID == 4741
+| where AccountType == 'User' and AccountDomain == '$' and AccountName != 'ANONYMOUS LOGON'
+| project TimeGenerated, AccountName, EventID, AccountType, AccountDomain, Computer, TargetUserName
