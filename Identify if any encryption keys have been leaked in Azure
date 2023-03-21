@@ -1,0 +1,15 @@
+securityresource
+| where type == "microsoft.keyvault/vaults"
+| extend KeyVaultResourceId = resourceid
+| join (securityalert
+| where AlertName == "Potential Key Vault Secrets Exposure"
+| summarize by ResourceId = tolower(tostring(AlertProperties['ResourceId'])), keyValue = tostring(AlertProperties['KeyValue']), TenantId = tostring(TenantId))
+) on KeyVaultResourceId
+| extend KeyResourceId = tolower(tostring(AlertProperties['ResourceId'])), keyValue = tostring(AlertProperties['KeyValue']), TenantId = tostring(TenantId)
+| join kind=fullouter (
+securityresource
+| where type == "microsoft.keyvault/keys"
+| extend KeyVaultResourceId = substring(resourceid, 1, toint(indexof(resourceid, "/", 35)))
+| project KeyVaultResourceId, KeyName = name, KeyResourceId = tolower(tostring(resourceid))
+) on KeyVaultResourceId, KeyResourceId
+| project AlertResourceGroup = split(KeyVaultResourceId, "/")[4], AlertSubscriptionId = split(KeyVaultResourceId, "/")[2], TenantId, KeyVaultResourceId, KeyName, Resources = KeyValue, ResourceType = iif(KeyName == "", "Key", "Key Version")
