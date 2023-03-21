@@ -1,0 +1,15 @@
+DeviceProcessEvents
+| where ProcessCommandLine contains "hidden" or ProcessCommandLine contains "stealth" or ProcessCommandLine contains "rootkit"
+| where ProcessCommandLine !contains "Microsoft"
+| where ProcessCommandLine !contains "Windows"
+| where ProcessCommandLine !contains "System32"
+| where ProcessCommandLine !contains "SysWOW64"
+| where ProcessCommandLine !contains "Program Files"
+| where ProcessCommandLine !contains "ProgramData"
+| where ProcessCommandLine !contains "AppData"
+| where ProcessCommandLine !contains "Temp"
+| where ProcessCommandLine !contains "Local"
+| where ProcessCommandLine !contains "Roaming"
+| where ProcessCommandLine !contains "Common"
+| where ProcessCommandLine !contains "All Users"
+| project TimeGenerated, ComputerName, InitiatingProcessCommandLine, InitiatingProcessParentFileName, InitiatingProcessParentCommandLine, ProcessCommandLine, FolderPath
