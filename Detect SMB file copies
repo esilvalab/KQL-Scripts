@@ -1,0 +1,14 @@
+// Find SMB file copies
+let timeRange = 1d; // set the time range to search for
+let threshold = 10; // set the threshold to define what is a potential file copy
+let smbEvents = SecurityEvent
+| where EventID == 4663
+| where AccessMask == "0x2"
+| where ObjectName contains "\\\\"
+| where TimeGenerated >= ago(timeRange)
+| summarize count() by ObjectName, bin(TimeGenerated, 10m)
+| order by count_ desc;
+let avgSmbEvents = toscalar(smbEvents | summarize avg(count_));
+smbEvents
+| where count_ > (threshold * avgSmbEvents)
+| project TimeGenerated, ObjectName, count_
