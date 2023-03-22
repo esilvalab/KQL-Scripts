@@ -1,0 +1,12 @@
+// Find malicious user-agents in web server logs
+let timeRange = 1d; // set the time range to search for
+let threshold = 100; // set the threshold to define what is suspicious
+let webLogs = your_table_name
+| where TimeGenerated >= ago(timeRange)
+| where cs(UserAgent) != "-"
+| summarize count() by cs(UserAgent)
+| order by count_ desc;
+let avgWebLogs = toscalar(webLogs | summarize avg(count_));
+webLogs
+| where count_ > (threshold * avgWebLogs)
+| project cs(UserAgent), count_
