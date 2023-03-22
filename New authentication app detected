@@ -1,0 +1,15 @@
+// Find new authentication apps detected
+let timeRange = 1d; // set the time range to search for
+let threshold = 1; // set the threshold to define what is new
+let authApps = DeviceManagementEvents
+| where ActionType == "Authentication"
+| where AuthenticationResult == "Success"
+| where TimeGenerated >= ago(timeRange)
+| summarize count() by UserId, ClientAppUsed, bin(TimeGenerated, 1h)
+| order by count_ desc;
+let uniqueAuthApps = toscalar(authApps | summarize dcount(ClientAppUsed));
+authApps
+| where count_ > threshold
+| where count_ == 1 // only include events that represent a new authentication app
+| where uniqueAuthApps > 1 // exclude events that involve the only known authentication app
+| project TimeGenerated, UserId, ClientAppUsed, count_
