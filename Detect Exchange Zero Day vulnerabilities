@@ -1,0 +1,8 @@
+//Find all successful commands that modify mailbox permissions
+Search-ExchangeAuditLog -StartDate (Get-Date).AddDays(-7) -EndDate (Get-Date) -Cmdlets Add-MailboxPermission,Remove-MailboxPermission -ResultSize unlimited -CmdletParameters *-AccessRights -Status Succeeded | 
+//Filter for specific mailboxes or users if needed
+where Identity -like "*example.com*" or UserId -eq "john@example.com" |
+//Group results by cmdlet, mailbox/user, and access rights
+summarize count() by Operation, UserId, Identity, Parameters |
+//Identify unusual patterns or unexpected access
+where count_ > 50
