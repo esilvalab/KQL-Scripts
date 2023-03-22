@@ -1,0 +1,12 @@
+// Find anomalous amount of SMB sessions created
+let timeRange = 1d; // set the time range to search for
+let threshold = 100; // set the threshold to define what is anomalous
+let smbSessions = SecurityEvent
+| where EventID == 5140
+| where LogonType == 3
+| where TimeGenerated >= ago(timeRange)
+| summarize count() by SourceIpAddress, DestinationIpAddress, Computer, bin(TimeGenerated, 10m)
+| order by count_ desc;
+let avgSmbSessions = toscalar(smbSessions | summarize avg(count_));
+smbSessions
+| where count_ > (threshold * avgSmbSessions)
