@@ -1,0 +1,13 @@
+// Find potential Windows network sniffing
+let timeRange = 1d; // set the time range to search for
+let threshold = 50; // set the threshold to define what is potentially sniffing
+let tcpTraffic = NetworkCommunicationEvents
+| where TimeGenerated >= ago(timeRange)
+| where Protocol == "tcp"
+| summarize count() by LocalIP, RemoteIP, LocalPort, RemotePort, bin(TimeGenerated, 10m)
+| order by count_ desc;
+let avgTcpTraffic = toscalar(tcpTraffic | summarize avg(count_));
+tcpTraffic
+| where count_ > (threshold * avgTcpTraffic)
+| join (DeviceInventory | where OSType == "Windows") on $left.LocalIP == $right.IPAddress
+| project TimeGenerated, LocalIP, RemoteIP, LocalPort, RemotePort, count_, Computer
