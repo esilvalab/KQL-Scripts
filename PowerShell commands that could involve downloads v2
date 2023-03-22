@@ -1,0 +1,6 @@
+// Detect PowerShell commands that could involve downloads
+SecurityEvent
+| where EventID == 4104 and Channel == "Microsoft-Windows-Sysmon/Operational"
+| extend EventData = parse_xml(EventData)
+| where EventData.Image == "powershell.exe" and EventData.ScriptBlockText matches regex "(Invoke-WebRequest|Invoke-RestMethod|Invoke-Expression)" and EventData.ScriptBlockText has_any ("http:", "https:")
+| project TimeGenerated, Computer, AccountName, EventData.ScriptBlockText, EventData.Utterance, EventData.ProcessCommandLine, EventData.Image
