@@ -1,0 +1,31 @@
+//Find all successful login attempts from unusual locations
+SecurityEvent 
+| where EventID == 4624 
+| where AccountType == "User" 
+| where LogonType == 2 
+| where SourceIp != "192.168.1.1" and SourceIp != "10.0.0.1" // Add trusted IP addresses 
+| where SourceIp !startswith "192.168." and SourceIp !startswith "10." // Add trusted IP address ranges 
+| where SourceIp !in~ (Perimeter_IPList) // Add perimeter IP addresses 
+| extend City = geoip_city(SourceIp) 
+| where isnull(City) or City != "MyCity" // Add trusted city 
+| project TimeGenerated, Account, SourceIp, City 
+| summarize count() by SourceIp, City, bin(TimeGenerated, 10m) 
+| order by count_ desc
+
+//Find all unusual process creations on Endpoints
+let allowedProcesses = dynamic(["svchost.exe", "explorer.exe", "taskmgr.exe"]); // Add trusted processes 
+ProcessCreationEvents
+| where not(ProcessCommandLine in~ (allowedProcesses))
+| summarize count() by ProcessCommandLine, bin(TimeGenerated, 1m)
+| order by count_ desc
+
+//Find all unusual network traffic
+let trustedProtocols = dynamic(["tcp", "udp", "icmp"]); // Add trusted protocols 
+let trustedPorts = dynamic(["80", "443", "53"]); // Add trusted ports 
+let trustedIpRanges = dynamic(["192.168.1.1/24", "10.0.0.1/24"]); // Add trusted IP address ranges 
+NetworkCommunicationEvents 
+| where not(Protocol in~ (trustedProtocols))
+| where not(LocalPort in~ (trustedPorts))
+| where not(RemoteIP in~ (trustedIpRanges))
+| summarize count() by RemoteIP, RemotePort, Protocol, bin(TimeGenerated, 1m) 
+| order by count_ desc
