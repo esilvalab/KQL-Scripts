@@ -1,0 +1,10 @@
+SecurityEvent 
+| where EventID == 4624 and LogonType == 3 
+| where AccountType == 'User' and LogonProcessName matches regex "^nt(l|m|a|v)" 
+| where Computer matches regex "^(win7|win8|win10)" 
+| extend SourceIP = tostring(parse_json(tostring(SecurityEvent.Properties)).IpAddress) 
+| join (SecurityEvent | where EventID == 4688 
+| where NewProcessName has any ("cmd.exe", "powershell.exe", "wmic.exe", "cscript.exe", "mshta.exe") 
+| project TargetUser = SubjectUserName, TargetProcess = NewProcessName, TargetComputer = Computer ) on Computer 
+| where SourceIP !in~ ('127.0.0.1', '::1') 
+| summarize count() by SourceIP, TargetComputer, TargetUser, TargetProcess
