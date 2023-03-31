@@ -1,0 +1,10 @@
+let timeframe = 1d;
+let containerName = "example-container";
+
+SecurityAlert
+| where TimeGenerated > ago(timeframe)
+| where AlertName == "Suspicious container activity"
+| where ContainerName == containerName
+| extend TargetAccounts = parse_json(TargetAccounts)
+| where TargetAccounts[0].OperationType == "Network Connect"
+| project TimeGenerated, AlertName, AccountName, TargetAccounts[0].Resource, TargetAccounts[0].IpAddress, TargetAccounts[0].Port, TargetAccounts[0].Protocol
